@@ -9,8 +9,8 @@ number:
 date:
 consensus: true
 v: 3
-area: General
-workgroup: WG Working Group
+area: "Applications"
+workgroup: "Domain Name System"
 keyword:
  - AI agent
  - DNS
@@ -18,12 +18,12 @@ keyword:
  - service resolution
  - agent protocol
 venue:
-  group: WG
-  type: Working Group
-  mail: WG@example.com
-  arch: https://example.com/WG
-  github: nobrowning/dns-native-agent-naming-resolution
-  latest: https://nobrowning.github.io/dns-native-agent-naming-resolution/draft-cui-dns-native-agent-naming-resolution.html
+  group: "Domain Name System"
+  type: "Working Group"
+  mail: "namedroppers@nic.ddn.mil"
+  arch: "nicfs.nic.ddn.mil:~/namedroppers/*.Z"
+  github: "nobrowning/dns-native-agent-naming-resolution"
+  latest: "https://nobrowning.github.io/dns-native-agent-naming-resolution/draft-cui-dns-native-agent-naming-resolution.html"
 
 author:
 - role:  # remove if not true
