@@ -1,7 +1,7 @@
 {
   "magic": "E!vIA5L86J2I",
-  "timestamp": "2025-12-21T00:17:22.247672+00:00",
-  "repo": "nobrowning/dns-native-agent-naming-discovery",
+  "timestamp": "2025-12-23T00:16:18.491314+00:00",
+  "repo": "nobrowning/dns-native-agent-naming-resolution",
   "labels": [
     {
       "name": "bug",
