@@ -22,3 +22,4 @@ draft-cui-dns-native-agent-naming-resolution.xml
 package-lock.json
 report.xml
 !requirements.txt
+notes_*.md
