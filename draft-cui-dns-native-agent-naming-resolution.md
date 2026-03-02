@@ -219,8 +219,9 @@ _agent.translator.example.com. IN TXT (
   "pk=base64-encoded-public-key;"                      ; OPTIONAL
   "sig=base64-encoded-signature;"                      ; OPTIONAL
   "svcb-digest=base64-encoded-sha256-digest;"          ; OPTIONAL
-  "agent-desc=https://translator.example.com/.well-known/agent-descriptor.json;" ; OPTIONAL
-  "agent-desc-sha256=x48E9qOokqqrvdts8nOJRJN3OWDUoyWxBf7kbu9DBPE="                 ; OPTIONAL
+  "agent-desc=https://translator.example.com/
+                   .well-known/agent-descriptor.json;" ; OPTIONAL
+  "agent-desc-sha256=x48E9qOokqqrv="                   ; OPTIONAL
 )
 ~~~
 
@@ -749,7 +750,8 @@ When signature-based TXT validation is used, the signature input MUST be constru
 signing_input = "v=" + v + ";kid=" + kid + ";alg=" + alg + ";pk=" + pk
 if svcb-digest present: signing_input += ";svcb-digest=" + svcb-digest
 if agent-desc present: signing_input += ";agent-desc=" + agent-desc
-if agent-desc-sha256 present: signing_input += ";agent-desc-sha256=" + agent-desc-sha256
+if agent-desc-sha256 present: signing_input += ";agent-desc-sha256=" 
+                            + agent-desc-sha256
 ~~~
 
 Example:
@@ -833,8 +835,9 @@ translator.example.com.    IN AAAA  2001:db8::50
 _agent.translator.example.com. IN TXT "v=1;kid=key-2025-01;
                     alg=Ed25519;pk=...;sig=...;
                     svcb-digest=...;
-                    agent-desc=https://translator.example.com/.well-known/agent-descriptor.json;
-                    agent-desc-sha256=x48E9qOokqqrvdts8nOJRJN3OWDUoyWxBf7kbu9DBPE="
+                    agent-desc=https://translator.example.com/
+                            .well-known/agent-descriptor.json;
+                    agent-desc-sha256=x48E9qOokqqr7kbu9DBPE="
 
 ; Version resolution (SVCB)
 _agent.translator.example.com. IN SVCB 1 agent-v3.example.com. (
