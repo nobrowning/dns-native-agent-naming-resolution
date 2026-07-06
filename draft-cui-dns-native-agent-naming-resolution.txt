@@ -2,10 +2,10 @@
 
 
 
-Domain Name System                                                Y. Cui
+Network Working Group                                             Y. Cui
 Internet-Draft                                       Tsinghua University
-Intended status: Informational                              2 March 2026
-Expires: 3 September 2026
+Intended status: Informational                               6 July 2026
+Expires: 7 January 2027
 
 
                DNS-Native AI Agent Naming and Resolution
@@ -14,32 +14,23 @@ Expires: 3 September 2026
 Abstract
 
    This document specifies DNS-Native Agent Naming and Resolution (DN-
-   ANR) for AI agents.  DN-ANR has three goals: (1) use domain names
-   (FQDNs) as stable Agent Identifiers, (2) resolve Agent Identifiers to
-   verifiable endpoints and supported protocol/version information with
-   a cryptographic integrity chain (DNSSEC preferred), and (3) provide
-   only minimal and stable pointer/index capabilities that can be
-   referenced by upper-layer discovery systems.  DN-ANR intentionally
-   does not carry heavy semantic metadata in DNS, and does not define
-   semantic discovery, ranking, or routing decisions.
+   ANR) for AI agents.  DN-ANR uses domain names (FQDNs) as stable Agent
+   Identifiers and resolves a selected Agent Identifier to verifiable
+   endpoints and supported protocol/version information with a
+   cryptographic integrity chain, with DNSSEC preferred.
 
-About This Document
-
-   This note is to be removed before publishing as an RFC.
-
-   The latest revision of this draft can be found at
-   https://nobrowning.github.io/dns-native-agent-naming-resolution/
-   draft-cui-dns-native-agent-naming-resolution.html.  Status
-   information for this document may be found at
-   https://datatracker.ietf.org/doc/draft-cui-dns-native-agent-naming-
-   resolution/.
-
-   Discussion of this document takes place on the Domain Name System
-   Working Group mailing list (mailto:namedroppers@nic.ddn.mil), which
-   is archived at nicfs.nic.ddn.mil:~/namedroppers/*.Z.
-
-   Source for this draft and an issue tracker can be found at
-   https://github.com/nobrowning/dns-native-agent-naming-resolution.
+   DN-ANR is a post-selection resolution profile.  It does not define
+   agent discovery, capability search, semantic matching, ranking, or
+   routing decisions.  Agent discovery, publication, or registry,
+   including DNS-based mechanisms such as DNS-AID, may produce candidate
+   Agent Identifiers; DN-ANR resolves and verifies the identifier
+   selected by such mechanisms or by local policy.  Within that scope,
+   DN-ANR additionally defines DNS-based version distribution and
+   deterministic version selection, canonicalized SVCB integrity cross-
+   checking, and a signed HTTPS mirror for clients that cannot perform
+   SVCB queries.  While AI agents are the primary use case, the
+   resolution and verification behavior defined here applies to any
+   entity identified by an FQDN, such as services and workloads.
 
 Status of This Memo
 
@@ -56,7 +47,7 @@ Status of This Memo
    time.  It is inappropriate to use Internet-Drafts as reference
    material or to cite them other than as "work in progress."
 
-   This Internet-Draft will expire on 3 September 2026.
+   This Internet-Draft will expire on 7 January 2027.
 
 Copyright Notice
 
@@ -77,73 +68,77 @@ Table of Contents
    1.  Introduction
      1.1.  Goals
      1.2.  Non-Goals
-   2.  Conventions and Definitions
-   3.  Design Principles
-   4.  Architecture Overview
-   5.  Naming and Resource Location
-     5.1.  Domain Name as Identity
-       5.1.1.  Naming Rules
-       5.1.2.  Naming Examples
-     5.2.  Resource Location via DNS
-   6.  DNS Record Design
-     6.1.  Mandatory DNS Data (MUST)
-     6.2.  Recommended DNS Data (SHOULD)
-     6.3.  Optional DNS Data (MAY)
-     6.4.  TXT Record: Identity Anchor (Conditional Metadata)
-       6.4.1.  TXT Record Format
-       6.4.2.  TXT Field Descriptions
-     6.5.  SVCB Record: Version Distribution and Protocol Negotiation
-       6.5.1.  SVCB Record Example
-     6.6.  Version and Protocol Resolution
-       6.6.1.  SVCB Private Parameters
-       6.6.2.  ALPN Usage
-       6.6.3.  Relationship Between Version and Protocol
-       6.6.4.  External Descriptor Locator and Digest in TXT
+   2.  Relationship to Agent Discovery and Registry Specifications
+     2.1.  Co-existence with DNS-Based Discovery Mechanisms
+   3.  Conventions and Definitions
+   4.  Design Principles
+   5.  Architecture Overview
+   6.  Naming and Resource Location
+     6.1.  Domain Name as Identity
+       6.1.1.  Naming Rules
+       6.1.2.  Naming Examples
+     6.2.  Resource Location via DNS
+   7.  DNS Record Design
+     7.1.  Mandatory DNS Data (MUST)
+     7.2.  Recommended DNS Data (SHOULD)
+     7.3.  Optional DNS Data (MAY)
+     7.4.  TXT Record: Identity Anchor (Conditional Metadata)
+       7.4.1.  TXT Record Format
+       7.4.2.  TXT Field Descriptions
+     7.5.  SVCB Record: Version Distribution and Protocol Negotiation
+       7.5.1.  SVCB Record Example
+     7.6.  Version and Protocol Resolution
+       7.6.1.  SVCB Private Parameters
+       7.6.2.  ALPN Usage
+       7.6.3.  Relationship Between Version and Protocol
+       7.6.4.  External Resolution Manifest Locator and Digest in TXT
                (Optional)
-       6.6.5.  Interoperability Gating for Descriptor-Dependent
-               Clients
-   7.  Performance and Determinism
-     7.1.  Why Address Hints
-     7.2.  Recommended SVCB Publication Strategy
-     7.3.  TTL Guidance
-   8.  HTTPS Fallback Mechanism
-     8.1.  agent-dns.json
-       8.1.1.  Media Type
-       8.1.2.  JSON Signature
-       8.1.3.  JSON Schema Definition
-       8.1.4.  File Structure Example
-       8.1.5.  JSON Signature Computation
-       8.1.6.  JSON Signature Verification
-     8.2.  Design Principles
-     8.3.  Applicable Scenarios
-   9.  Security
-     9.1.  Security Model Overview
-       9.1.1.  DNSSEC-based Security (RECOMMENDED)
-       9.1.2.  DNSSEC Deployment Recommendations
-       9.1.3.  Signature-based Security (OPTIONAL but RECOMMENDED)
-       9.1.4.  Choosing a Security Mechanism
-     9.2.  SVCB Integrity Digest (Optional)
-       9.2.1.  SVCB Canonicalization
-       9.2.2.  Digest Computation
-     9.3.  Signature Specification
-       9.3.1.  Public Key Requirements
-       9.3.2.  Signature Input Construction
-       9.3.3.  Signature Generation
-       9.3.4.  Signature Verification Procedure
-       9.3.5.  TLS Certificate Binding Verification (Option 1 Only)
-   10. Implementation Checklist
-     10.1.  For Agent Publishers
-     10.2.  For Client Developers
-     10.3.  DNS Record Configuration Example
-   11. Security Considerations
-     11.1.  Threat Model
-     11.2.  Mandatory Security Requirements
-     11.3.  Deployment Recommendations
-     11.4.  Specification Scope
-   12. IANA Considerations
-   13. References
-     13.1.  Normative References
-     13.2.  Informative References
+       7.6.5.  Interoperability Gating for
+               Resolution-Manifest-Dependent Clients
+   8.  Performance and Determinism
+     8.1.  Why Address Hints
+     8.2.  Recommended SVCB Publication Strategy
+     8.3.  TTL Guidance
+   9.  HTTPS Fallback Mechanism
+     9.1.  agent-dns.json
+       9.1.1.  Media Type
+       9.1.2.  JSON Signature
+       9.1.3.  JSON Schema Definition
+       9.1.4.  File Structure Example
+       9.1.5.  JSON Signature Computation
+       9.1.6.  JSON Signature Verification
+     9.2.  Design Principles
+     9.3.  Applicable Scenarios
+   10. Security
+     10.1.  Security Model Overview
+       10.1.1.  DNSSEC-based Security (RECOMMENDED)
+       10.1.2.  DNSSEC Deployment Recommendations
+       10.1.3.  Signature-based Security (OPTIONAL but RECOMMENDED)
+       10.1.4.  Choosing a Security Mechanism
+     10.2.  SVCB Integrity Digest (Optional)
+       10.2.1.  SVCB Canonicalization
+       10.2.2.  Digest Computation
+     10.3.  Signature Specification
+       10.3.1.  Public Key Requirements
+       10.3.2.  Signature Input Construction
+       10.3.3.  Signature Generation
+       10.3.4.  Signature Verification Procedure
+       10.3.5.  TLS Certificate Binding Verification (Option 1 Only)
+   11. Implementation Checklist
+     11.1.  For Agent Publishers
+     11.2.  For Client Developers
+     11.3.  DNS Record Configuration Example
+   12. Security Considerations
+     12.1.  Threat Model
+     12.2.  Mandatory Security Requirements
+     12.3.  Deployment Recommendations
+     12.4.  Specification Scope
+   13. IANA Considerations
+     13.1.  SVCB Service Parameter Keys
+     13.2.  Underscored DNS Node Names
+   14. References
+     14.1.  Normative References
+     14.2.  Informative References
    Acknowledgments
    Author's Address
 
@@ -161,6 +156,21 @@ Table of Contents
    systems produce candidate Agent Identifiers, while DN-ANR securely
    resolves a chosen Agent Identifier into connection material.
 
+   DN-ANR is a DNS-native post-selection resolution and integrity
+   profile for a selected FQDN-based Agent Identifier.
+
+   Related IETF work on the discovery of agents, workloads, and other
+   named entities (see, for example, [DAWN-PS] and [DAWN-TERM]) frames
+   discovery as an end-to-end problem: learning what entities exist,
+   what they offer, and whether they can be trusted.  Within such an
+   end-to-end discovery workflow, DN-ANR addresses the final stage.
+   Discovery mechanisms answer "which entity"; DN-ANR answers "how to
+   reach it, and whether the resolution answer itself is authentic".
+   DN-ANR is therefore intended to serve as a reusable resolution and
+   verification component within layered entity-discovery architectures,
+   and to align with the requirements and information models produced by
+   such efforts.
+
 1.1.  Goals
 
    DN-ANR goals are:
@@ -172,27 +182,100 @@ Table of Contents
        Identifier to endpoint(s), protocol/version declarations, and
        verifiable integrity material.
 
-   3.  *Foundational support for discovery systems*: expose only minimal
-       stable pointers/indexes that upper-layer discovery systems MAY
-       reference.
+   3.  *Post-selection interoperability*: provide stable DNS-based
+       resolution semantics that can be consumed after an Agent
+       Identifier has been selected by local policy, user input, a
+       registry, a gateway, or an agent discovery mechanism.
+
+   4.  *Deployment-flexible integrity*: provide verifiable resolution
+       integrity in both DNSSEC-enabled and DNSSEC-unavailable
+       environments, via DNSSEC validation and/or application-layer TXT
+       signatures with TLS certificate binding.
 
 1.2.  Non-Goals
 
    DN-ANR non-goals are:
 
-   *  DN-ANR does not provide cross-domain agent discovery by semantics
-      or capability.
+   *  DN-ANR does not define agent discovery, publication, registry, or
+      search.
 
-   *  DN-ANR does not provide semantic matching, capability ranking, or
-      task-routing decisions.
+   *  DN-ANR does not define organization-wide agent indexes, DNS-SD
+      enumeration, cross-domain search, or capability search.
 
-   *  DN-ANR does not standardize heavy capability metadata schemas
-      inside DNS.
+   *  DN-ANR does not provide semantic matching, capability ranking,
+      reputation, governance, or task-routing decisions.
 
-   *  DN-ANR only specifies how to securely and deterministically
-      connect after an Agent Identifier has been selected.
+   *  DN-ANR does not standardize agent capability models, OpenAPI-like
+      schemas, model cards, policy bundles, trust registries, or
+      behavioral attestations.
 
-2.  Conventions and Definitions
+   *  DN-ANR does not replace discovery specifications.  It only
+      specifies how to securely and deterministically resolve and verify
+      an Agent Identifier after that identifier has been selected.
+
+2.  Relationship to Agent Discovery and Registry Specifications
+
+   DN-ANR is intended to interoperate with, but not replace, discovery,
+   publication, registry, indexing, or search specifications for agents
+   and other named entities.  Such specifications may use DNS, HTTP,
+   private registries, directories, agent gateways, semantic search
+   systems, or other mechanisms to produce one or more candidate Agent
+   Identifiers.  Problem statements and terminology for this broader
+   entity-discovery space are being developed in the IETF (see
+   [DAWN-PS], [DAWN-TERM]); DN-ANR is positioned as the resolution and
+   verification stage of such an architecture, and its requirements and
+   information model are expected to align with the outputs of that
+   work.
+
+   DN-ANR starts after the selection step.  A DN-ANR client is given
+   exactly one selected Agent Identifier and resolves it to endpoint
+   connection material, protocol/version declarations, and integrity
+   metadata.
+
+   For example, DNS-based discovery specifications such as [DNSAID]
+   define mechanisms for publishing AI agents in DNS so that other
+   agents can discover them.  Such specifications may define
+   organization-level indexes, capability descriptors, DNS-SD entry
+   points, or other discovery metadata.  DN-ANR does not define those
+   mechanisms.  DN-ANR defines only the resolution and verification
+   behavior for a selected Agent Identifier.
+
+   Accordingly, DN-ANR does not define DNS-based enumeration,
+   organization indexes, capability search, semantic matching, ranking,
+   routing, reputation, or governance.  These functions are expected to
+   be handled by upper-layer discovery systems, private policy,
+   registries, or operational frameworks.
+
+2.1.  Co-existence with DNS-Based Discovery Mechanisms
+
+   DN-ANR is designed so that a publisher can deploy it alongside a DNS-
+   based discovery mechanism such as [DNSAID] without conflict.  A
+   discovery mechanism resolves "which agent," while DN-ANR resolves
+   "how to connect to, and verify, that agent."  An organization MAY use
+   a discovery specification to publish and enumerate its agents, and
+   use DN-ANR to publish the version distribution, deterministic
+   endpoint selection, and integrity material for each individual agent
+   once selected.
+
+   To keep this co-existence unambiguous, DN-ANR intentionally reuses
+   the _agents underscored owner-name label ([RFC8552]) that other
+   agent-related DNS specifications, including [DNSAID], also use,
+   rather than requesting a separate label.  DN-ANR's usage is scoped
+   one level deeper than an organization-wide inventory label: DN-ANR's
+   records are published under _agents.<Agent Identifier> (for example,
+   _agents.translator.example.com), naming the specific already-selected
+   agent, rather than under _agents.<organization domain> as an
+   inventory or index entry point.  See IANA Considerations for further
+   discussion of this label.
+
+   Agent discovery, publication, registry, and indexing specifications
+   may identify candidate agents.  DNS-based discovery mechanisms such
+   as [DNSAID] are one example of that class.  DN-ANR begins after such
+   a mechanism, or local policy, has selected one Agent Identifier.  DN-
+   ANR then resolves that identifier to endpoint, protocol/version, and
+   integrity material.
+
+3.  Conventions and Definitions
 
    The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT",
    "SHOULD", "SHOULD NOT", "RECOMMENDED", "NOT RECOMMENDED", "MAY", and
@@ -209,9 +292,18 @@ Table of Contents
       identifies an agent.
 
    Agent Protocol:  The application-layer protocol used for agent-to-
-      agent communication (e.g., [A2A], [ANP]).
+      agent communication (e.g., [A2A], [ANP]).  Other DNS-based
+      specifications may carry equivalent protocol identifiers in
+      different DNS parameters; see Relationship to Agent Discovery and
+      Registry Specifications.
 
-3.  Design Principles
+   Although this document uses AI agents as its primary use case, the
+   resolution and verification behavior defined here applies to any
+   entity identified by an FQDN, such as services or workloads.  Where
+   broader entity-discovery terminology (e.g., [DAWN-TERM]) is in use,
+   "Agent" in this document may be read as an FQDN-named entity.
+
+4.  Design Principles
 
    This specification follows five core principles:
 
@@ -240,7 +332,7 @@ Table of Contents
 
                                   Table 1
 
-4.  Architecture Overview
+5.  Architecture Overview
 
    DN-ANR is a resolution-layer specification inside a three-layer
    architecture:
@@ -271,15 +363,15 @@ Table of Contents
    *  Connection Layer consumes DN-ANR outputs and executes protocol-
       specific session logic.
 
-5.  Naming and Resource Location
+6.  Naming and Resource Location
 
-5.1.  Domain Name as Identity
+6.1.  Domain Name as Identity
 
    Each agent is uniquely identified by a stable Fully Qualified Domain
    Name (FQDN).  Domain ownership combined with TLS certificates forms
    the foundation of agent identity.
 
-5.1.1.  Naming Rules
+6.1.1.  Naming Rules
 
    *  Use domain names or subdomains owned by the organization
 
@@ -287,14 +379,14 @@ Table of Contents
 
    *  No registration with any central authority is required
 
-5.1.2.  Naming Examples
+6.1.2.  Naming Examples
 
    # Recommended: dedicated subdomains
    translator.agents.example.com
-   assistant.ai.company.com
+   assistant.ai.example.org
    agent123.agents.example.com
 
-5.2.  Resource Location via DNS
+6.2.  Resource Location via DNS
 
    This specification does not use URL paths for version expression.
    All version and endpoint selection is controlled by DNS records:
@@ -309,7 +401,7 @@ Table of Contents
        Identifier as the default Agent Endpoint
 
    4.  Query DNS TXT records (if present) -> obtain optional
-       application-layer security and descriptor metadata
+       application-layer security and resolution manifest metadata
 
    5.  Apply local security policy (e.g., DNSSEC validation and/or TXT
        signature validation)
@@ -321,13 +413,13 @@ Table of Contents
    already-selected identifier; it does not perform semantic discovery
    or ranking.
 
-6.  DNS Record Design
+7.  DNS Record Design
 
    This specification keeps DNS payloads minimal and operationally
    stable.  DNS data is classified as MUST/SHOULD/MAY to separate core
    resolution from optional optimization.
 
-6.1.  Mandatory DNS Data (MUST)
+7.1.  Mandatory DNS Data (MUST)
 
    *  *A/AAAA* [RFC1035]: provide baseline reachability and
       interoperability for resolvers and clients.
@@ -335,7 +427,7 @@ Table of Contents
    Rationale: A/AAAA guarantees minimum connectability and provides a
    default Agent Endpoint when no SVCB policy is available.
 
-6.2.  Recommended DNS Data (SHOULD)
+7.2.  Recommended DNS Data (SHOULD)
 
    *  *SVCB* [RFC9460] [RFC9461] with endpoint parameters and address
       hints (ipv4hint, ipv6hint): provide deterministic endpoint
@@ -345,13 +437,14 @@ Table of Contents
       for DNS RRsets.
 
    *  *TXT identity anchor* [RFC1035]: publish optional application-
-      layer security metadata and optional descriptor pointers.
+      layer security metadata and optional resolution manifest pointers.
 
    Rationale: SVCB and DNSSEC substantially improve determinism,
    performance, and security.  TXT metadata supports alternative or
-   additional security models and descriptor linkage when needed.
+   additional security models and resolution manifest linkage when
+   needed.
 
-6.3.  Optional DNS Data (MAY)
+7.3.  Optional DNS Data (MAY)
 
    *  *TXT signature fields* (alg, pk, sig): used when signature-based
       verification is enabled.
@@ -359,17 +452,21 @@ Table of Contents
    *  *TXT SVCB integrity digest* (svcb-digest): optional integrity
       cross-check material, especially for HTTPS fallback workflows.
 
-   *  *TXT descriptor pointer fields* (agent-desc, agent-desc-sha256):
-      pointer + digest for heavy external metadata.
+   *  *TXT resolution manifest pointer fields* (resolution-manifest,
+      resolution-manifest-sha256): pointer + digest for heavy external
+      metadata.
 
    Rationale: Heavy metadata evolves quickly and can grow large; keeping
    it out of DNS preserves DNS efficiency while retaining verifiable
    linkage.
 
-6.4.  TXT Record: Identity Anchor (Conditional Metadata)
+7.4.  TXT Record: Identity Anchor (Conditional Metadata)
 
    TXT records [RFC1035] provide optional application-layer metadata.
-   Their responsibilities are strictly limited to:
+   They are not a fallback encoding of service connectivity data:
+   endpoint and connection parameters are carried exclusively in SVCB
+   (or, as a baseline default, A/AAAA).  Their responsibilities are
+   strictly limited to:
 
    1.  Declare identity metadata (e.g., v, kid)
 
@@ -379,93 +476,100 @@ Table of Contents
    3.  Optionally publish SVCB digest (svcb-digest) for integrity cross-
        check, especially with HTTPS fallback
 
-   4.  Optionally publish external descriptor pointer metadata (agent-
-       desc, agent-desc-sha256)
+   4.  Optionally publish external resolution manifest pointer metadata
+       (resolution-manifest, resolution-manifest-sha256)
 
-6.4.1.  TXT Record Format
+7.4.1.  TXT Record Format
 
-_agent.translator.example.com. IN TXT (
-  "v=1;"
-  "kid=key-2025-01;"
-  "alg=Ed25519;"                                       ; OPTIONAL
-  "pk=base64-encoded-public-key;"                      ; OPTIONAL
-  "sig=base64-encoded-signature;"                      ; OPTIONAL
-  "svcb-digest=base64-encoded-sha256-digest;"          ; OPTIONAL
-  "agent-desc=https://translator.example.com/.well-known/agent-descriptor.json;" ; OPTIONAL
-  "agent-desc-sha256=x48E9qOokqqrvdts8nOJRJN3OWDUoyWxBf7kbu9DBPE="                 ; OPTIONAL
-)
+   _agents.translator.example.com. IN TXT (
+     "v=1;"
+     "kid=key-2025-01;"
+     "alg=Ed25519;"                                       ; OPTIONAL
+     "pk=base64-encoded-public-key;"                      ; OPTIONAL
+     "sig=base64-encoded-signature;"                      ; OPTIONAL
+     "svcb-digest=base64-encoded-sha256-digest;"          ; OPTIONAL
+     "resolution-manifest=https://translator.example.com/
+                      .well-known/resolution-manifest.json;" ; OPTIONAL
+     "resolution-manifest-sha256=x48E9qOokqqrv="          ; OPTIONAL
+   )
 
-6.4.2.  TXT Field Descriptions
+7.4.2.  TXT Field Descriptions
 
-   +===================+==============================================+
-   | Field             | Description                                  |
-   +===================+==============================================+
-   | v                 | Version identifier, fixed as 1               |
-   +-------------------+----------------------------------------------+
-   | kid               | Key identifier, used for key rotation        |
-   +-------------------+----------------------------------------------+
-   | alg               | Signature algorithm: Ed25519 (RECOMMENDED)   |
-   |                   | or ES256 (OPTIONAL; REQUIRED when sig is     |
-   |                   | present)                                     |
-   +-------------------+----------------------------------------------+
-   | pk                | Base64-encoded public key (OPTIONAL;         |
-   |                   | REQUIRED when sig is present)                |
-   +-------------------+----------------------------------------------+
-   | sig               | Signature over selected TXT content          |
-   |                   | (OPTIONAL; used in signature-based security  |
-   |                   | mode)                                        |
-   +-------------------+----------------------------------------------+
-   | svcb-digest       | Base64-encoded SHA-256 digest of             |
-   |                   | canonicalized SVCB records (OPTIONAL; useful |
-   |                   | for HTTPS fallback integrity cross-check)    |
-   +-------------------+----------------------------------------------+
-   | agent-desc        | Descriptor URI for external heavy metadata   |
-   |                   | (OPTIONAL)                                   |
-   +-------------------+----------------------------------------------+
-   | agent-desc-sha256 | Base64-encoded SHA-256 digest of descriptor  |
-   |                   | content (OPTIONAL; RECOMMENDED when agent-   |
-   |                   | desc is present)                             |
-   +-------------------+----------------------------------------------+
+    +============================+===================================+
+    | Field                      | Description                       |
+    +============================+===================================+
+    | v                          | Version identifier, fixed as 1    |
+    +----------------------------+-----------------------------------+
+    | kid                        | Key identifier, used for key      |
+    |                            | rotation                          |
+    +----------------------------+-----------------------------------+
+    | alg                        | Signature algorithm: Ed25519      |
+    |                            | (RECOMMENDED) or ES256 (OPTIONAL; |
+    |                            | REQUIRED when sig is present)     |
+    +----------------------------+-----------------------------------+
+    | pk                         | Base64-encoded public key         |
+    |                            | (OPTIONAL; REQUIRED when sig is   |
+    |                            | present)                          |
+    +----------------------------+-----------------------------------+
+    | sig                        | Signature over selected TXT       |
+    |                            | content (OPTIONAL; used in        |
+    |                            | signature-based security mode)    |
+    +----------------------------+-----------------------------------+
+    | svcb-digest                | Base64-encoded SHA-256 digest of  |
+    |                            | canonicalized SVCB records        |
+    |                            | (OPTIONAL; useful for HTTPS       |
+    |                            | fallback integrity cross-check)   |
+    +----------------------------+-----------------------------------+
+    | resolution-manifest        | Resolution manifest URI for       |
+    |                            | external heavy metadata           |
+    |                            | (OPTIONAL)                        |
+    +----------------------------+-----------------------------------+
+    | resolution-manifest-sha256 | Base64-encoded SHA-256 digest of  |
+    |                            | resolution manifest content       |
+    |                            | (OPTIONAL; RECOMMENDED when       |
+    |                            | resolution-manifest is present)   |
+    +----------------------------+-----------------------------------+
 
                                  Table 3
 
-6.5.  SVCB Record: Version Distribution and Protocol Negotiation
+7.5.  SVCB Record: Version Distribution and Protocol Negotiation
 
    SVCB (Service Binding) records [RFC9460] are the core resolution
    mechanism, serving the following responsibilities:
 
-   +==================+================================================+
-   | Level            | SVCB Role                                      |
-   +==================+================================================+
-   | Service Location | TargetName + port specify                      |
-   |                  | the service endpoint                           |
-   +------------------+------------------------------------------------+
-   | Version          | Private SvcParam declares                      |
-   | Distribution     | agent version                                  |
-   +------------------+------------------------------------------------+
-   | Protocol         | Private parameters declare                     |
-   | Negotiation      | supported agent protocols                      |
-   +------------------+------------------------------------------------+
-   | Performance      | ipv4hint / ipv6hint reduce                     |
-   | Optimization     | additional address lookups                     |
-   +------------------+------------------------------------------------+
+           +===============+===================================+
+           | Level         | SVCB Role                         |
+           +===============+===================================+
+           | Service       | TargetName + port specify the     |
+           | Location      | service endpoint                  |
+           +---------------+-----------------------------------+
+           | Version       | Private SvcParam declares agent   |
+           | Distribution  | version                           |
+           +---------------+-----------------------------------+
+           | Connection    | Private parameters declare a      |
+           | Compatibility | post-selection connection-profile |
+           |               | hint (supported agent protocols)  |
+           +---------------+-----------------------------------+
+           | Performance   | ipv4hint / ipv6hint reduce        |
+           | Optimization  | additional address lookups        |
+           +---------------+-----------------------------------+
 
                                   Table 4
 
-6.5.1.  SVCB Record Example
+7.5.1.  SVCB Record Example
 
    # Complete SVCB record example
-   _agent.translator.example.com. IN SVCB 1 agent-v3.example.com. (
+   _agents.translator.example.com. IN SVCB 1 agent-v3.example.com. (
      alpn=h2
      port=443
      ipv4hint=203.0.113.50
      ipv6hint=2001:db8::50
      key65480="v3"              ; Agent version
-     key65481="a2a,anp"         ; Supported agent protocols
+     key65481="a2a,anp"         ; Connection profile (post-selection)
    )
 
    # v2 version (lower priority)
-   _agent.translator.example.com. IN SVCB 2 agent-v2.example.com. (
+   _agents.translator.example.com. IN SVCB 2 agent-v2.example.com. (
      alpn=h2
      port=443
      ipv4hint=203.0.113.51
@@ -473,24 +577,25 @@ _agent.translator.example.com. IN TXT (
      key65481="a2a"
    )
 
-6.6.  Version and Protocol Resolution
+7.6.  Version and Protocol Resolution
 
-6.6.1.  SVCB Private Parameters
+7.6.1.  SVCB Private Parameters
 
    This specification introduces private SVCB parameters (SvcParam) as
    defined in [RFC9460]:
 
-            +===========+=================+==================+
-            | Parameter | Semantics       | Example          |
-            +===========+=================+==================+
-            | key65480  | Agent version   | "v3", "v2.1.0"   |
-            +-----------+-----------------+------------------+
-            | key65481  | Agent protocols | "a2a", "a2a,anp" |
-            +-----------+-----------------+------------------+
+    +===========+====================================+================+
+    | Parameter | Semantics                          | Example        |
+    +===========+====================================+================+
+    | key65480  | Agent version                      | "v3", "v2.1.0" |
+    +-----------+------------------------------------+----------------+
+    | key65481  | Connection profile (post-selection | "a2a",         |
+    |           | connection compatibility hint)     | "a2a,anp"      |
+    +-----------+------------------------------------+----------------+
 
-                                 Table 5
+                                  Table 5
 
-6.6.1.1.  Version Selection Behavior
+7.6.1.1.  Version Selection Behavior
 
    Clients can:
 
@@ -500,41 +605,54 @@ _agent.translator.example.com. IN TXT (
    *  *Specific selection*: Specify key65480 value to select a
       particular version
 
-   *  *Protocol filtering*: Select only versions supporting specific
-      protocols (key65481)
+   *  *Connection compatibility selection*: After an Agent Identifier
+      has already been selected, clients MAY prefer SVCB alternatives
+      whose key65481 (connection-profile) value matches a locally
+      supported connection profile or agent protocol.  This is not a
+      discovery or ranking mechanism across different Agent Identifiers.
 
-6.6.2.  ALPN Usage
+7.6.1.2.  Scope of Private SvcParamKeys
 
-   ALPN is used for TLS-layer protocol negotiation (e.g., h2, h3).
-   Agent interaction protocols ([A2A], [ANP]) are declared via SVCB
-   private parameters (key65481), not ALPN values.  This ensures
-   compatibility with existing TLS ecosystems and reserves space for
-   future IANA registration.
+   The private SvcParamKeys defined in this document are post-selection
+   connection hints.  They are scoped to one selected Agent Identifier
+   and MUST NOT be used as a DNS-based mechanism to enumerate, search,
+   rank, or advertise agents across an organization or across domains.
 
-6.6.3.  Relationship Between Version and Protocol
+7.6.2.  ALPN Usage
+
+   DN-ANR treats ALPN as a transport-layer negotiation signal only
+   (e.g., h2, h3).  Agent interaction protocols ([A2A], [ANP]) are
+   declared via SVCB private parameters (key65481, connection-profile),
+   not ALPN values, and are consumed only after an Agent Identifier has
+   been selected.  This keeps DN-ANR compatible with existing TLS
+   ecosystems and reserves ALPN identifier space for transport-layer
+   use.
+
+7.6.3.  Relationship Between Version and Protocol
 
    This specification clearly distinguishes two layers:
 
-          +================+======================+============+
-          | Layer          | Declaration Location | Example    |
-          +================+======================+============+
-          | Agent Version  | key65480             | v3, v2.1.0 |
-          +----------------+----------------------+------------+
-          | Agent Protocol | key65481             | a2a, anp   |
-          +----------------+----------------------+------------+
+        +====================+======================+============+
+        | Layer              | Declaration Location | Example    |
+        +====================+======================+============+
+        | Agent Version      | key65480             | v3, v2.1.0 |
+        +--------------------+----------------------+------------+
+        | Connection Profile | key65481             | a2a, anp   |
+        +--------------------+----------------------+------------+
 
                                  Table 6
 
-6.6.4.  External Descriptor Locator and Digest in TXT (Optional)
+7.6.4.  External Resolution Manifest Locator and Digest in TXT
+        (Optional)
 
    DN-ANR supports optional linkage to heavy external metadata while
    keeping DNS payloads minimal:
 
-   *  agent-desc in TXT contains an absolute URI that identifies a
-      descriptor resource.
+   *  resolution-manifest in TXT contains an absolute URI that
+      identifies a resolution manifest resource.
 
-   *  agent-desc-sha256 in TXT contains the SHA-256 digest of the
-      descriptor in Base64 encoding.
+   *  resolution-manifest-sha256 in TXT contains the SHA-256 digest of
+      the resolution manifest in Base64 encoding.
 
    DN-ANR standardizes only:
 
@@ -542,40 +660,56 @@ _agent.translator.example.com. IN TXT (
 
    *  Digest algorithm (SHA-256) and digest encoding.
 
-   *  Client verification flow (fetch descriptor -> compute digest ->
-      compare -> consume).
+   *  Client verification flow (fetch resolution manifest -> compute
+      digest -> compare -> consume).
 
-   DN-ANR does not standardize descriptor content schema (capability
-   model, OpenAPI, model card, I/O schema, etc.).
+   DN-ANR does not standardize resolution manifest content schema
+   (capability model, OpenAPI, model card, I/O schema, etc.).
 
-   Descriptor digest computation rules:
+   The resolution-manifest field is not a DNS-based discovery mechanism.
+   It is a locator for external metadata associated with an already-
+   selected Agent Identifier.  DN-ANR does not define how clients
+   search, rank, compare, or select agents based on resolution manifest
+   contents.
 
-   1.  Fetch descriptor bytes from the URI in agent-desc.
+   The presence of resolution-manifest MUST NOT be interpreted as an
+   organization index, a capability registry, a ranking signal, or a
+   statement that the agent is trusted for any particular task.
+   Resolution manifest semantics, if any, are defined by upper-layer
+   protocols or external specifications.
 
-   2.  If the descriptor media type is JSON, canonicalize using JCS
-       [RFC8785] before hashing.
+   Resolution manifest digest computation rules:
+
+   1.  Fetch resolution manifest bytes from the URI in resolution-
+       manifest.
+
+   2.  If the resolution manifest media type is JSON, canonicalize using
+       JCS [RFC8785] before hashing.
 
    3.  For non-JSON media types, hash the raw octet stream as retrieved.
 
    4.  Compute SHA-256 and Base64-encode the result.
 
-   5.  Compare with agent-desc-sha256; mismatch MUST be treated as
-       verification failure.
+   5.  Compare with resolution-manifest-sha256; mismatch MUST be treated
+       as verification failure.
 
-6.6.5.  Interoperability Gating for Descriptor-Dependent Clients
+7.6.5.  Interoperability Gating for Resolution-Manifest-Dependent
+        Clients
 
-   *  A client that depends on descriptor data MUST require agent-desc;
-      otherwise it MUST treat descriptor-based logic as unavailable.
+   *  A client that depends on resolution manifest data MUST require
+      resolution-manifest; otherwise it MUST treat resolution-manifest-
+      based logic as unavailable.
 
-   *  A client that requires descriptor-integrity verification MUST
-      require both agent-desc and agent-desc-sha256.
+   *  A client that requires resolution manifest integrity verification
+      MUST require both resolution-manifest and resolution-manifest-
+      sha256.
 
-   *  A publisher that wants interoperable descriptor verification
-      SHOULD publish both TXT fields together.
+   *  A publisher that wants interoperable resolution manifest
+      verification SHOULD publish both TXT fields together.
 
-7.  Performance and Determinism
+8.  Performance and Determinism
 
-7.1.  Why Address Hints
+8.1.  Why Address Hints
 
    SVCB ipv4hint and ipv6hint improve resolution behavior by:
 
@@ -585,20 +719,20 @@ _agent.translator.example.com. IN TXT (
 
    *  reducing resolver-path jitter under recursive caching variance.
 
-7.2.  Recommended SVCB Publication Strategy
+8.2.  Recommended SVCB Publication Strategy
 
    *  Publishers SHOULD keep each SVCB RRSet compact and avoid excessive
       per-version record expansion.
 
    *  When many versions exist, publishers SHOULD keep only stable
       externally supported versions in DNS and move detailed capability/
-      version matrices to external descriptors (agent-desc + agent-desc-
-      sha256 in TXT).
+      version matrices to external resolution manifests (resolution-
+      manifest + resolution-manifest-sha256 in TXT).
 
    *  Publishers SHOULD keep endpoint migration agility by using shorter
       TTLs for SVCB than TXT.
 
-7.3.  TTL Guidance
+8.3.  TTL Guidance
 
    *  Identity anchors (TXT) SHOULD use relatively longer TTL values.
 
@@ -606,19 +740,24 @@ _agent.translator.example.com. IN TXT (
       shorter TTL values to support endpoint migration and rapid
       rollback.
 
-8.  HTTPS Fallback Mechanism
+9.  HTTPS Fallback Mechanism
 
    To ensure "works by default" behavior, this specification introduces
    an optional but strongly recommended fallback mechanism.
 
-8.1.  agent-dns.json
+9.1.  agent-dns.json
 
    For clients that do not support SVCB queries, agents can publish a
    JSON mirror of DNS records at an HTTPS endpoint:
 
    https://{agent-id}/.well-known/agent-dns.json
 
-8.1.1.  Media Type
+   The HTTPS fallback is a signed mirror for one selected Agent
+   Identifier.  It MUST NOT contain an organization-wide list of agents,
+   search results, capability rankings, or registry data that is not
+   part of the DNS resolution data for that Agent Identifier.
+
+9.1.1.  Media Type
 
    The agent-dns.json file MUST be served with the following HTTP
    headers:
@@ -630,7 +769,7 @@ _agent.translator.example.com. IN TXT (
    between 300 seconds (5 minutes) and 3600 seconds (1 hour) is
    RECOMMENDED.
 
-8.1.2.  JSON Signature
+9.1.2.  JSON Signature
 
    The JSON file MUST include a signature for integrity protection.
    Unlike the TXT record signature which covers only TXT fields, the
@@ -640,7 +779,7 @@ _agent.translator.example.com. IN TXT (
    the document (excluding the sig field) as defined in [RFC8785] (JSON
    Canonicalization Scheme).
 
-8.1.3.  JSON Schema Definition
+9.1.3.  JSON Schema Definition
 
    The agent-dns.json file MUST conform to the following JSON Schema:
 
@@ -713,12 +852,13 @@ _agent.translator.example.com. IN TXT (
                "type": "string",
                "description": "Agent version (mirrors key65480)"
              },
-             "agentProtocols": {
+             "connectionProfile": {
                "type": "array",
                "items": {
                  "type": "string"
                },
-               "description": "Supported protocols (mirrors key65481)"
+               "description": "Post-selection connection
+                                       profile (mirrors key65481)"
              }
            }
          }
@@ -731,7 +871,7 @@ _agent.translator.example.com. IN TXT (
      }
    }
 
-8.1.4.  File Structure Example
+9.1.4.  File Structure Example
 
    {
      "agentId": "translator.example.com",
@@ -748,7 +888,7 @@ _agent.translator.example.com. IN TXT (
          "port": 443,
          "alpn": ["h2"],
          "agentVersion": "v3",
-         "agentProtocols": ["a2a", "anp"]
+         "connectionProfile": ["a2a", "anp"]
        },
        {
          "priority": 2,
@@ -756,13 +896,13 @@ _agent.translator.example.com. IN TXT (
          "port": 443,
          "alpn": ["h2"],
          "agentVersion": "v2",
-         "agentProtocols": ["a2a"]
+         "connectionProfile": ["a2a"]
        }
      ],
      "sig": "MEUCIQC7..."
    }
 
-8.1.5.  JSON Signature Computation
+9.1.5.  JSON Signature Computation
 
    The signature over the JSON file is computed as follows:
 
@@ -780,7 +920,7 @@ _agent.translator.example.com. IN TXT (
    signature = Sign(TLS_private_key, UTF-8(canonical_json))
    sig = Base64Encode(signature)
 
-8.1.6.  JSON Signature Verification
+9.1.6.  JSON Signature Verification
 
    Clients MUST verify the JSON signature:
 
@@ -805,10 +945,14 @@ _agent.translator.example.com. IN TXT (
    key in txt.pk, which has the same trust anchor limitations as
    described in the Security Model Overview.
 
-8.2.  Design Principles
+9.2.  Design Principles
 
    *  *Mirror, not addition*: JSON only mirrors information already in
       DNS; it does not introduce content absent from DNS
+
+   *  *Single-identifier scope*: the mirror reflects resolution data for
+      exactly one selected Agent Identifier; it MUST NOT be extended
+      into a multi-agent directory or index
 
    *  *DNS remains authoritative*: HTTPS JSON is only a "readable
       mirror", not a new authoritative source
@@ -819,7 +963,7 @@ _agent.translator.example.com. IN TXT (
    *  *Schema validated*: Clients SHOULD validate JSON against the
       defined schema
 
-8.3.  Applicable Scenarios
+9.3.  Applicable Scenarios
 
    *  Clients that do not support SVCB queries
 
@@ -829,12 +973,12 @@ _agent.translator.example.com. IN TXT (
 
    *  Environments where DNS resolution is limited
 
-9.  Security
+10.  Security
 
    This section defines the security mechanisms for ensuring the
    integrity and authenticity of agent resolution data.
 
-9.1.  Security Model Overview
+10.1.  Security Model Overview
 
    This specification provides two complementary mechanisms for ensuring
    integrity and authenticity of agent resolution data:
@@ -862,12 +1006,12 @@ _agent.translator.example.com. IN TXT (
 
                                  Table 7
 
-9.1.1.  DNSSEC-based Security (RECOMMENDED)
+10.1.1.  DNSSEC-based Security (RECOMMENDED)
 
    DNSSEC [RFC4033] provides cryptographic authentication of DNS data at
    the protocol level.
 
-9.1.2.  DNSSEC Deployment Recommendations
+10.1.2.  DNSSEC Deployment Recommendations
 
    *  For publicly reachable agents, the authoritative zone SHOULD
       deploy DNSSEC.
@@ -893,13 +1037,13 @@ _agent.translator.example.com. IN TXT (
    *  Application-layer signatures remain useful for defense in depth
       and for JSON fallback integrity.
 
-9.1.3.  Signature-based Security (OPTIONAL but RECOMMENDED)
+10.1.3.  Signature-based Security (OPTIONAL but RECOMMENDED)
 
    This specification defines an optional but recommended signing
    mechanism for integrity protection.  Agent providers have two options
    for key management:
 
-9.1.3.1.  Option 1: TLS Certificate Keys (RECOMMENDED)
+10.1.3.1.  Option 1: TLS Certificate Keys (RECOMMENDED)
 
    Using the domain's TLS certificate keys provides a complete trust
    chain:
@@ -925,7 +1069,7 @@ _agent.translator.example.com. IN TXT (
    4.  Clients can verify the signature using the public key from the
        TLS certificate chain
 
-9.1.3.2.  Option 2: Separate Key Pair
+10.1.3.2.  Option 2: Separate Key Pair
 
    Agent providers MAY use a separate key pair (not derived from TLS
    certificates) for signing:
@@ -962,7 +1106,7 @@ _agent.translator.example.com. IN TXT (
    *  Out-of-band key distribution mechanisms MAY be used to establish
       trust
 
-9.1.4.  Choosing a Security Mechanism
+10.1.4.  Choosing a Security Mechanism
 
     +============================+====================================+
     | Scenario                   | Recommended Approach               |
@@ -983,21 +1127,21 @@ _agent.translator.example.com. IN TXT (
 
                                   Table 8
 
-9.2.  SVCB Integrity Digest (Optional)
+10.2.  SVCB Integrity Digest (Optional)
 
    When svcb-digest is present in TXT, SVCB records can be cross-checked
    for integrity (for example, during HTTPS fallback reconciliation).
    This section defines the canonicalization and digest computation
    procedures.
 
-9.2.1.  SVCB Canonicalization
+10.2.1.  SVCB Canonicalization
 
    To compute the svcb-digest, SVCB records MUST be canonicalized as
    follows:
 
-9.2.1.1.  Step 1: Collect and Sort
+10.2.1.1.  Step 1: Collect and Sort
 
-   1.  Collect all SVCB records for the agent's _agent prefix.
+   1.  Collect all SVCB records for the agent's _agents prefix.
 
    2.  Exclude AliasMode records (priority = 0).
 
@@ -1005,7 +1149,7 @@ _agent.translator.example.com. IN TXT (
 
    4.  If priorities are equal, sort by TargetName lexicographically.
 
-9.2.1.2.  Step 2: Normalize Each Record
+10.2.1.2.  Step 2: Normalize Each Record
 
    For each SVCB record, construct a canonical string in the following
    format:
@@ -1017,7 +1161,7 @@ _agent.translator.example.com. IN TXT (
    params: SvcParams in sorted order by key number, formatted as
    key=value
 
-9.2.1.3.  Step 3: SvcParam Normalization
+10.2.1.3.  Step 3: SvcParam Normalization
 
    SvcParams MUST be normalized as follows:
 
@@ -1031,24 +1175,27 @@ _agent.translator.example.com. IN TXT (
 
    5.  Separate parameters with a single space.
 
-9.2.1.4.  Canonical Format Example
+10.2.1.4.  Canonical Format Example
 
-# Original SVCB records:
-_agent.translator.example.com. IN SVCB 2 agent-v2.example.com. (
-  alpn=h2 port=443 key65480="v2" key65481="a2a"
-)
-_agent.translator.example.com. IN SVCB 1 agent-v3.example.com. (
-  alpn=h2 port=443 key65480="v3" key65481="a2a,anp"
-)
+   # Original SVCB records:
+   _agents.translator.example.com. IN SVCB 2 agent-v2.example.com. (
+     alpn=h2 port=443 key65480="v2" key65481="a2a"
+   )
+   _agents.translator.example.com. IN SVCB 1 agent-v3.example.com. (
+     alpn=h2 port=443 key65480="v3" key65481="a2a,anp"
+   )
 
-# Canonical representation (sorted by priority):
-1 agent-v3.example.com key1=h2 key3=443 key65480="v3" key65481="a2a,anp"
-2 agent-v2.example.com key1=h2 key3=443 key65480="v2" key65481="a2a"
+   # Canonical representation (sorted by priority):
+   1 agent-v3.example.com key1=h2 key3=443 key65480="v3" \
+     key65481="a2a,anp"
+   2 agent-v2.example.com key1=h2 key3=443 key65480="v2" key65481="a2a"
 
    Note: alpn is SvcParamKey 1, port is SvcParamKey 3 as defined in
-   [RFC9460].
+   [RFC9460].  The trailing backslash and line break after key65480="v3"
+   above are wrapping for document display only; the actual canonical
+   string for that record contains no line break at that position.
 
-9.2.2.  Digest Computation
+10.2.2.  Digest Computation
 
    canonical_svcb = <line1> + "\n" + <line2> + "\n" + ...
    digest_bytes = SHA-256(UTF-8(canonical_svcb))
@@ -1057,17 +1204,17 @@ _agent.translator.example.com. IN SVCB 1 agent-v3.example.com. (
    The resulting svcb-digest is approximately 44 characters (32 bytes
    encoded in Base64).
 
-9.3.  Signature Specification
+10.3.  Signature Specification
 
    This section defines the signature mechanism when signature-based
    security is used.
 
-9.3.1.  Public Key Requirements
+10.3.1.  Public Key Requirements
 
    The pk field contains the public key used for signature verification.
    There are two options:
 
-9.3.1.1.  When Using TLS Certificate Keys (RECOMMENDED)
+10.3.1.1.  When Using TLS Certificate Keys (RECOMMENDED)
 
    The pk field MUST contain the public key from the domain's TLS
    certificate:
@@ -1078,7 +1225,7 @@ _agent.translator.example.com. IN SVCB 1 agent-v3.example.com. (
 
    3.  The certificate MUST be valid for the agent's domain name.
 
-9.3.1.2.  When Using Separate Key Pair
+10.3.1.2.  When Using Separate Key Pair
 
    The pk field contains the agent provider's self-managed public key:
 
@@ -1092,13 +1239,13 @@ _agent.translator.example.com. IN SVCB 1 agent-v3.example.com. (
    lacks an independent trust anchor.  See Security Model Overview for
    implications.
 
-9.3.1.3.  Supported Key Types
+10.3.1.3.  Supported Key Types
 
    *  EC P-256 (for ES256 algorithm) - RECOMMENDED
 
    *  Ed25519 (for Ed25519 algorithm)
 
-9.3.2.  Signature Input Construction
+10.3.2.  Signature Input Construction
 
    When signature-based TXT validation is used, the signature input MUST
    be constructed from TXT fields as follows:
@@ -1106,21 +1253,30 @@ _agent.translator.example.com. IN SVCB 1 agent-v3.example.com. (
    1.  Include required fields in this exact order: v, kid, alg, pk.
 
    2.  If present, append optional fields in this exact order: svcb-
-       digest, agent-desc, agent-desc-sha256.
+       digest, resolution-manifest, resolution-manifest-sha256.
 
    3.  Use key=value pairs separated by semicolons, with no trailing
        semicolon.
 
-signing_input = "v=" + v + ";kid=" + kid + ";alg=" + alg + ";pk=" + pk
-if svcb-digest present: signing_input += ";svcb-digest=" + svcb-digest
-if agent-desc present: signing_input += ";agent-desc=" + agent-desc
-if agent-desc-sha256 present: signing_input += ";agent-desc-sha256=" + agent-desc-sha256
+   signing_input = "v=" + v + ";kid=" + kid
+                    + ";alg=" + alg + ";pk=" + pk
+   if svcb-digest present:
+     signing_input += ";svcb-digest=" + svcb-digest
+   if resolution-manifest present:
+     signing_input += ";resolution-manifest="
+                       + resolution-manifest
+   if resolution-manifest-sha256 present:
+     signing_input += ";resolution-manifest-sha256="
+                       + resolution-manifest-sha256
 
-   Example: ~~~ v=1;kid=key-2025-01;alg=ES256;pk=MFkwEwYHKoZI...;agent-
-   desc=https://translator.example.com/.well-known/agent-descriptor.json
-   ~~~
+   Example (line-wrapped for display only; the actual signing input
+   contains no line break):
 
-9.3.3.  Signature Generation
+   v=1;kid=key-2025-01;alg=ES256;pk=MFkwEwYHKoZI...;
+   resolution-manifest=https://translator.example.com/
+   .well-known/resolution-manifest.json
+
+10.3.3.  Signature Generation
 
    signature_bytes = Sign(private_key, UTF-8(signing_input))
    sig = Base64Encode(signature_bytes)
@@ -1133,7 +1289,7 @@ if agent-desc-sha256 present: signing_input += ";agent-desc-sha256=" + agent-des
    Base64 characters.  For Ed25519: signature is 64 bytes, resulting in
    88 Base64 characters.
 
-9.3.4.  Signature Verification Procedure
+10.3.4.  Signature Verification Procedure
 
    Clients MUST perform the following steps:
 
@@ -1159,7 +1315,7 @@ if agent-desc-sha256 present: signing_input += ";agent-desc-sha256=" + agent-des
    and the private key holder.  Without DNSSEC or TLS binding, there is
    no external trust anchor to verify the key's authenticity.
 
-9.3.5.  TLS Certificate Binding Verification (Option 1 Only)
+10.3.5.  TLS Certificate Binding Verification (Option 1 Only)
 
    When TLS certificate keys are used (Option 1), clients SHOULD verify
    that the pk in the TXT record matches the server's TLS certificate:
@@ -1179,29 +1335,30 @@ if agent-desc-sha256 present: signing_input += ";agent-desc-sha256=" + agent-des
    used (Option 2), as the pk in the TXT record will not match the TLS
    certificate.
 
-10.  Implementation Checklist
+11.  Implementation Checklist
 
-10.1.  For Agent Publishers
+11.1.  For Agent Publishers
 
    1.  Prepare domain name, configure HTTPS and TLS certificate
 
    2.  Configure DNS A/AAAA records (basic connectivity)
 
-   3.  (OPTIONAL) Configure DNS TXT record (_agent.xxx) for signature
-       metadata (alg/pk/sig), svcb-digest, and/or descriptor pointer
-       fields
+   3.  (OPTIONAL) Configure DNS TXT record (_agents.xxx) for signature
+       metadata (alg/pk/sig), svcb-digest, and/or resolution manifest
+       pointer fields
 
    4.  Configure DNS SVCB records with endpoint, protocol/version, and
        (SHOULD) address hints
 
-   5.  (OPTIONAL) Publish descriptor URI + digest in TXT (agent-desc,
-       agent-desc-sha256) for heavy metadata externalization
+   5.  (OPTIONAL) Publish resolution manifest URI + digest in TXT
+       (resolution-manifest, resolution-manifest-sha256) for heavy
+       metadata externalization
 
    6.  (RECOMMENDED) Publish /.well-known/agent-dns.json fallback file
 
    7.  (RECOMMENDED for public deployments) Enable DNSSEC
 
-10.2.  For Client Developers
+11.2.  For Client Developers
 
    1.  Query SVCB records, parse version and endpoint information
 
@@ -1209,42 +1366,45 @@ if agent-desc-sha256 present: signing_input += ";agent-desc-sha256=" + agent-des
        default endpoint
 
    3.  Query TXT records (if present), parse optional fields (pk, sig,
-       svcb-digest, agent-desc, agent-desc-sha256)
+       svcb-digest, resolution-manifest, resolution-manifest-sha256)
 
-   4.  If descriptor fields are present and required by local policy,
-       fetch descriptor and verify digest before use
+   4.  If resolution manifest fields are present and required by local
+       policy, fetch the resolution manifest and verify digest before
+       use
 
    5.  (Fallback) If SVCB unavailable, fetch agent-dns.json when needed
 
-   6.  Connect to endpoint per agent protocol (key65481) specification
+   6.  Connect to endpoint per the selected connection-profile
+       (key65481) value
 
    7.  Validate DNSSEC when present, and fail closed for bogus SVCB/TXT
        results that are part of the selected trust path
 
-10.3.  DNS Record Configuration Example
+11.3.  DNS Record Configuration Example
 
-; Basic connectivity
-translator.example.com.    IN A     203.0.113.50
-translator.example.com.    IN AAAA  2001:db8::50
+   ; Basic connectivity
+   translator.example.com.    IN A     203.0.113.50
+   translator.example.com.    IN AAAA  2001:db8::50
 
-; Optional TXT identity/security/descriptor metadata
-_agent.translator.example.com. IN TXT "v=1;kid=key-2025-01;
-                    alg=Ed25519;pk=...;sig=...;
-                    svcb-digest=...;
-                    agent-desc=https://translator.example.com/.well-known/agent-descriptor.json;
-                    agent-desc-sha256=x48E9qOokqqrvdts8nOJRJN3OWDUoyWxBf7kbu9DBPE="
+   ; Optional TXT identity/security/resolution-manifest metadata
+   _agents.translator.example.com. IN TXT "v=1;kid=key-2025-01;
+               alg=Ed25519;pk=...;sig=...;
+               svcb-digest=...;
+               resolution-manifest=https://translator.example.com/
+               .well-known/resolution-manifest.json;
+               resolution-manifest-sha256=x48E9qOokqqr7kbu9DBPE="
 
-; Version resolution (SVCB)
-_agent.translator.example.com. IN SVCB 1 agent-v3.example.com. (
-  alpn=h2 port=443
-  ipv4hint=203.0.113.50 ipv6hint=2001:db8::50
-  key65480="v3" key65481="a2a,anp"
-)
-_agent.translator.example.com. IN SVCB 2 agent-v2.example.com. (
-  alpn=h2 port=443 ipv4hint=203.0.113.51 key65480="v2" key65481="a2a"
-)
+   ; Version resolution (SVCB)
+   _agents.translator.example.com. IN SVCB 1 agent-v3.example.com. (
+     alpn=h2 port=443
+     ipv4hint=203.0.113.50 ipv6hint=2001:db8::50
+     key65480="v3" key65481="a2a,anp"
+   )
+   _agents.translator.example.com. IN SVCB 2 agent-v2.example.com. (
+     alpn=h2 port=443 ipv4hint=203.0.113.51 key65480="v2" key65481="a2a"
+   )
 
-11.  Security Considerations
+12.  Security Considerations
 
    This specification uses DNS as the authoritative source for agent
    resolution and identity information.  Its security objectives are to
@@ -1252,7 +1412,7 @@ _agent.translator.example.com. IN SVCB 2 agent-v2.example.com. (
    results, rather than evaluating agent service quality or behavioral
    trustworthiness.
 
-11.1.  Threat Model
+12.1.  Threat Model
 
    This specification primarily considers the following threats:
 
@@ -1268,7 +1428,7 @@ _agent.translator.example.com. IN SVCB 2 agent-v2.example.com. (
    *  Trust violations caused by expired or replaced identity
       declarations
 
-11.2.  Mandatory Security Requirements
+12.2.  Mandatory Security Requirements
 
    To address the above threats, this specification mandates:
 
@@ -1288,7 +1448,7 @@ _agent.translator.example.com. IN SVCB 2 agent-v2.example.com. (
       related metadata MUST synchronously update TXT and SVCB
       information when versions or endpoints change
 
-11.3.  Deployment Recommendations
+12.3.  Deployment Recommendations
 
    *  For Internet-facing agent domains, authoritative operators SHOULD
       enable DNSSEC [RFC4033].
@@ -1305,7 +1465,14 @@ _agent.translator.example.com. IN SVCB 2 agent-v2.example.com. (
       mechanism; deployments MAY combine DNSSEC and signature-based
       protections.
 
-11.4.  Specification Scope
+12.4.  Specification Scope
+
+   DN-ANR verifies the authenticity, integrity, and consistency of agent
+   resolution data.  It does not assert that the resolved agent is
+   benign, competent, authorized for a task, compliant with policy, or
+   reputable.  Those judgments are made by upper-layer protocols,
+   governance systems, trust registries, organizational policy, or other
+   discovery and selection mechanisms.
 
    This specification guarantees the following properties:
 
@@ -1326,31 +1493,62 @@ _agent.translator.example.com. IN SVCB 2 agent-v2.example.com. (
    These concerns should be handled by upper-layer protocols,
    operational frameworks, or governance mechanisms.
 
-12.  IANA Considerations
+13.  IANA Considerations
 
-   This document requests IANA registration of the following SVCB
-   SvcParamKeys:
+13.1.  SVCB Service Parameter Keys
 
-   +========+=================+===========================+===========+
-   | Number | Name            | Meaning                   | Reference |
-   +========+=================+===========================+===========+
-   | 65480  | agent-version   | Agent version identifier  | This      |
-   |        |                 |                           | document  |
-   +--------+-----------------+---------------------------+-----------+
-   | 65481  | agent-protocols | Comma-separated list of   | This      |
-   |        |                 | supported agent protocols | document  |
-   +--------+-----------------+---------------------------+-----------+
+   This revision uses Private Use SvcParamKeys only for experimentation.
+   No permanent SvcParamKey codepoint is requested in this revision.
 
-                                 Table 9
+   The following private-use keys are used in examples and experimental
+   deployments:
+
+    +=============+====================+==============================+
+    | Private-use | Experimental name  | Meaning                      |
+    | key         |                    |                              |
+    +=============+====================+==============================+
+    | key65480    | agent-version      | Agent version or endpoint    |
+    |             |                    | profile revision             |
+    +-------------+--------------------+------------------------------+
+    | key65481    | connection-profile | Post-selection connection    |
+    |             |                    | compatibility hint           |
+    |             |                    | (supported agent protocols   |
+    |             |                    | for the selected identifier) |
+    +-------------+--------------------+------------------------------+
+
+                                  Table 9
 
    Note: The values 65480-65481 are in the private use range
-   (65280-65534) as defined in [RFC9460].  Upon publication, these
-   should be replaced with IANA-assigned values from the Expert Review
-   range.
+   (65280-65534) as defined in [RFC9460].
 
-13.  References
+   Future revisions may request permanent SvcParamKey registrations for
+   connection-profile (and, if warranted, agent-version) after
+   coordination with related agent discovery, publication, registry, and
+   connection-profile specifications, including possible alignment of
+   protocol identifier values with registries proposed by such
+   specifications.
 
-13.1.  Normative References
+13.2.  Underscored DNS Node Names
+
+   This document uses the _agents underscored owner-name label
+   ([RFC8552]) as a prefix for per-agent resolution records (for
+   example, _agents.translator.example.com).  This is the same label
+   used by DNS-based agent discovery mechanisms, including [DNSAID]'s
+   organization-level inventory mechanism; however, DN-ANR's usage is
+   scoped one level deeper, under the specific already-selected Agent
+   Identifier, rather than under an organization's root domain (see
+   Relationship to Agent Discovery and Registry Specifications).
+
+   Because [DNSAID] has already requested registration of _agents in the
+   "Underscored and Globally Scoped DNS Node Names" registry established
+   by [RFC8552], this document does not request a separate or duplicate
+   registration for that label in this revision.  Should working-group
+   review determine that the two usages require distinct registry
+   entries, this section will be revisited in a future revision.
+
+14.  References
+
+14.1.  Normative References
 
    [RFC1035]  Mockapetris, P., "Domain names - implementation and
               specification", STD 13, RFC 1035, DOI 10.17487/RFC1035,
@@ -1378,6 +1576,11 @@ _agent.translator.example.com. IN SVCB 2 agent-v2.example.com. (
               Version 1.3", RFC 8446, DOI 10.17487/RFC8446, August 2018,
               <https://www.rfc-editor.org/rfc/rfc8446>.
 
+   [RFC8552]  Crocker, D., "Scoped Interpretation of DNS Resource
+              Records through "Underscored" Naming of Attribute Leaves",
+              BCP 222, RFC 8552, DOI 10.17487/RFC8552, March 2019,
+              <https://www.rfc-editor.org/rfc/rfc8552>.
+
    [RFC8785]  Rundgren, A., Jordan, B., and S. Erdtman, "JSON
               Canonicalization Scheme (JCS)", RFC 8785,
               DOI 10.17487/RFC8785, June 2020,
@@ -1396,7 +1599,7 @@ _agent.translator.example.com. IN SVCB 2 agent-v2.example.com. (
               RFC 9525, DOI 10.17487/RFC9525, November 2023,
               <https://www.rfc-editor.org/rfc/rfc9525>.
 
-13.2.  Informative References
+14.2.  Informative References
 
    [A2A]      Google, "Agent2Agent Protocol (A2A)", 2025,
               <https://google.github.io/A2A/>.
@@ -1404,7 +1607,26 @@ _agent.translator.example.com. IN SVCB 2 agent-v2.example.com. (
    [ANP]      ANP Community, "Agent Network Protocol (ANP)", 2025,
               <https://agent-network-protocol.com/>.
 
+   [DAWN-PS]  Akhavain, A. and H. Moussa, "Problem Statement for the
+              Discovery of Agents, Workloads, and Named Entities", 2026,
+              <https://datatracker.ietf.org/doc/draft-akhavain-moussa-
+              dawn-problem-statement/>.
+
+   [DAWN-TERM]
+              Farrel, A., "Terminology for the Discovery of Agents,
+              Workloads, and Named Entities", 2026,
+              <https://datatracker.ietf.org/doc/draft-farrel-dawn-
+              terminology/>.
+
+   [DNSAID]   Mozley, J., Williams, N., Sarikaya, B., Schott, R., and J.
+              Damick, "DNS for AI Discovery", 2026,
+              <https://datatracker.ietf.org/doc/draft-mozleywilliams-
+              dnsop-dnsaid/>.
+
 Acknowledgments
+
+   The author thanks Chenguang Du for his valuable contributions to the
+   design and text of this draft.
 
 Author's Address
 
